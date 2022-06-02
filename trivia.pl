@@ -57,19 +57,28 @@ sub read_stats {
     close $fh;
 }
 
-sub add_entry {
-    my $file_name = "stats.csv";
-    my @new_entry;
-    my $name;
-    my $date;
-    my $amount;
-    my $calculated;
-    my $correct_input = 0;
+sub print_player_table {
+    my $rows = 5;
+    for (0..$rows-1) {
+        for (my $i = $_; $i < scalar @player_list; $i+=$rows) {
+            if (length $player_list[$i] > 8) {
+                print "[$i] $player_list[$i]\t";
+            }
+            elsif (length $player_list[$i] < 4) {
+                print "[$i] $player_list[$i]\t\t\t";
+            }
+            else {
+                print "[$i] $player_list[$i]\t\t";
+            }
+        }
+        print "\n";
+    }
+}
 
-    print_player_table();
-
+sub get_validated_name {
     # Get the name of the winner
     print "Enter player name/number or enter a new player name > ";
+    my $name;
     NAME_VALIDATION: while ($name = <STDIN>) {
         chomp $name;
 
@@ -97,12 +106,14 @@ sub add_entry {
         }
         print "No such name ($name) found. Try again > ";
     }
-
     print "\n";
+    return $name;
+}
 
+sub get_validated_date {
     # Get the date of the answer
     print "Answer Date (MM/DD/YYYY or MM/DD)> ";
-    $date = <STDIN>;
+    my $date = <STDIN>;
     chomp $date;
     my @date_components = split('/', $date);
     # If the user only entered MM/DD, we will assume it is the current year
@@ -111,12 +122,15 @@ sub add_entry {
         $date = join('/', @date_components);
     }
     print "$date\n";
-
     print "\n";
+    return $date;
+}
 
+sub get_validated_amount {
     # Get the prize amount
     print "Winning Amount > ";
-    $amount = <STDIN>;
+    my $amount = <STDIN>;
+    my $calculated;
     chomp $amount;
     if (uc($amount) eq 'FINAL JEOPARDY') {
         $calculated = 1000;
@@ -125,8 +139,26 @@ sub add_entry {
         $calculated = $amount;
     }
 
+    print "\n";
+    return ($amount, $calculated);
+}
+
+sub add_entry {
+    my $file_name = "stats.csv";
+    my @new_entry;
+    my $name;
+    my $date;
+    my $amount;
+    my $calculated;
+    my $correct_input = 0;
+
+    print_player_table();
+    $name = get_validated_name();
+    $date = get_validated_date();
+    ($amount, $calculated) = get_validated_amount();
+
     print "The entry you are about to submit will contain these values:\n";
-    print "name -> $name | date -> $date | amount -> $amount | calculated -> $calculated\n";
+    print "name -> $name\ndate -> $date\namount -> $amount\ncalculated -> $calculated\n";
     print "Are you sure you want to submit this entry? [y/n] > ";
     my $submit = <STDIN>;
     if (uc($submit) eq 'Y') {
@@ -137,24 +169,6 @@ sub add_entry {
     }
     else {
         print "ERROR! The new entry was not defined!\n";
-    }
-}
-
-sub print_player_table {
-    my $rows = 5;
-    for (0..$rows-1) {
-        for (my $i = $_; $i < scalar @player_list; $i+=$rows) {
-            if (length $player_list[$i] > 8) {
-                print "[$i] $player_list[$i]\t";
-            }
-            elsif (length $player_list[$i] < 4) {
-                print "[$i] $player_list[$i]\t\t\t";
-            }
-            else {
-                print "[$i] $player_list[$i]\t\t";
-            }
-        }
-        print "\n";
     }
 }
 
