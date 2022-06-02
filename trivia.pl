@@ -6,7 +6,7 @@ use strict;
 use Text::CSV;
 use Data::Dumper;
 use Scalar::Util qw(looks_like_number);
-use DateTime;
+use Time::Piece;
 
 # GLOBAL: declaration of the current jeopardy stats
 my @stats;
@@ -22,7 +22,6 @@ my @player_list;
     - Better input validation
     - check to make sure that a player has not already won on that date for input validation
     - main menu to select action
-    - don't accept an entry for a date that hasn't happened yet
     - able to list multiple names, separated by commas 
     - able to write persons name case insensitive
     - ensure users are entering dates correctly i.e. they can currently enter a single number
@@ -103,19 +102,25 @@ sub get_validated_name {
 }
 
 sub get_validated_date {
-    my $dt = DateTime->now;
+    my $dt = localtime;
     $dt = $dt->mdy('/');
     print "Answer Date (MM/DD/YYYY or MM/DD)> ";
     my $date = <STDIN>;
     chomp $date;
     if (uc($date) eq "TODAY") {
         $date = $dt;
+        return $date;
     }
     my @date_components = split('/', $date);
     # If the user only entered MM/DD, we will assume it is the current year
     if (scalar @date_components < 3) {
         push @date_components, "2022";
         $date = join('/', @date_components);
+    }
+    $date = Time::Piece->strptime($date, "%m/%d/%Y");
+    $date = $date->mdy('/');
+    if ($date gt $dt) {
+        die "ERROR! You can't have a winner for a day that hasn't happened yet!";
     }
     return $date;
 }
