@@ -24,7 +24,6 @@ my @player_list;
     - main menu to select action
     - able to list multiple names, separated by commas 
     - able to write persons name case insensitive
-    - ensure users are entering dates correctly i.e. they can currently enter a single number
 
 =end TODO
 =cut
@@ -113,9 +112,12 @@ sub get_validated_date {
     }
     my @date_components = split('/', $date);
     # If the user only entered MM/DD, we will assume it is the current year
-    if (scalar @date_components < 3) {
+    if (scalar @date_components == 2) {
         push @date_components, "2022";
         $date = join('/', @date_components);
+    }
+    elsif (scalar @date_components != 3) {
+        die "ERROR! Date entered incorrectly ($date).";
     }
     $date = Time::Piece->strptime($date, "%m/%d/%Y");
     $date = $date->mdy('/');
