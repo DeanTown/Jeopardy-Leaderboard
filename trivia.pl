@@ -21,10 +21,12 @@ my @player_list;
     - Add standings, both all time and current/past month
     - Better input validation
     - check to make sure that a player has not already won on that date for input validation
-    - Double check when adding new player name
     - main menu to select action
     - don't accept an entry for a date that hasn't happened yet
     - able to list multiple names, separated by commas 
+    - able to write 'today' for the date
+    - able to write 'final' for amount
+    - able to write persons name case insensitive
 
 =end TODO
 =cut
@@ -76,23 +78,15 @@ sub print_player_table {
 }
 
 sub get_validated_name {
-    # Get the name of the winner
     print "Enter player name/number or enter a new player name > ";
     my $name;
     NAME_VALIDATION: while ($name = <STDIN>) {
         chomp $name;
-
-        # 1: check if it's a number and if there is an existing match
-        # 2: check if the name exists in the players dictionary
-        # 3: if the name doesn't exist, provide the option to make a new one
-
         if (looks_like_number($name) and exists $player_list[$name]) {
             $name = $player_list[$name];
-            print "($name) index found\n";
             last NAME_VALIDATION;
         }
         elsif (exists $players{$name}) {
-            print "($name) found\n";
             last NAME_VALIDATION;
         }
         elsif (!looks_like_number($name)) {
@@ -106,12 +100,10 @@ sub get_validated_name {
         }
         print "No such name ($name) found. Try again > ";
     }
-    print "\n";
     return $name;
 }
 
 sub get_validated_date {
-    # Get the date of the answer
     print "Answer Date (MM/DD/YYYY or MM/DD)> ";
     my $date = <STDIN>;
     chomp $date;
@@ -121,13 +113,10 @@ sub get_validated_date {
         push @date_components, "2022";
         $date = join('/', @date_components);
     }
-    print "$date\n";
-    print "\n";
     return $date;
 }
 
 sub get_validated_amount {
-    # Get the prize amount
     print "Winning Amount > ";
     my $amount = <STDIN>;
     my $calculated;
@@ -138,8 +127,6 @@ sub get_validated_amount {
     else {
         $calculated = $amount;
     }
-
-    print "\n";
     return ($amount, $calculated);
 }
 
@@ -158,7 +145,7 @@ sub add_entry {
     ($amount, $calculated) = get_validated_amount();
 
     print "The entry you are about to submit will contain these values:\n";
-    print "name -> $name\ndate -> $date\namount -> $amount\ncalculated -> $calculated\n";
+    print "Player -> $name\nDate -> $date\nAmount -> $amount\nCalculated -> $calculated\n";
     print "Are you sure you want to submit this entry? [y/n] > ";
     my $submit = <STDIN>;
     if (uc($submit) eq 'Y') {
@@ -168,7 +155,7 @@ sub add_entry {
         close $fh
     }
     else {
-        print "ERROR! The new entry was not defined!\n";
+        print "Transaction Aborted! No data saved.\n";
     }
 }
 
