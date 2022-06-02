@@ -24,9 +24,8 @@ my @player_list;
     - main menu to select action
     - don't accept an entry for a date that hasn't happened yet
     - able to list multiple names, separated by commas 
-    - able to write 'today' for the date
-    - able to write 'final' for amount
     - able to write persons name case insensitive
+    - ensure users are entering dates correctly i.e. they can currently enter a single number
 
 =end TODO
 =cut
@@ -104,9 +103,14 @@ sub get_validated_name {
 }
 
 sub get_validated_date {
+    my $dt = DateTime->now;
+    $dt = $dt->mdy('/');
     print "Answer Date (MM/DD/YYYY or MM/DD)> ";
     my $date = <STDIN>;
     chomp $date;
+    if (uc($date) eq "TODAY") {
+        $date = $dt;
+    }
     my @date_components = split('/', $date);
     # If the user only entered MM/DD, we will assume it is the current year
     if (scalar @date_components < 3) {
@@ -121,7 +125,8 @@ sub get_validated_amount {
     my $amount = <STDIN>;
     my $calculated;
     chomp $amount;
-    if (uc($amount) eq 'FINAL JEOPARDY') {
+    if (uc($amount) eq "FINAL JEOPARDY" or uc($amount) eq "FINAL") {
+        $amount = "final jeopardy";
         $calculated = 1000;
     }
     else {
@@ -148,6 +153,7 @@ sub add_entry {
     print "Player -> $name\nDate -> $date\nAmount -> $amount\nCalculated -> $calculated\n";
     print "Are you sure you want to submit this entry? [y/n] > ";
     my $submit = <STDIN>;
+    chomp $submit;
     if (uc($submit) eq 'Y') {
         push @new_entry, ($name, $date, $amount, $calculated);
         open(my $fh, '>>', $file_name) or die "Error! Could not open '$file_name' $!\n";
