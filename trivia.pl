@@ -20,7 +20,6 @@ my @player_list;
 
     - Add standings, both all time and current/past month
     - Better input validation
-    - check to make sure that a player has not already won on that date for input validation
     - main menu to select action
     - able to list multiple names, separated by commas 
     - able to write persons name case insensitive
@@ -101,19 +100,27 @@ sub get_validated_name {
 }
 
 sub get_validated_date {
+    # Get today's date in MM/DD/YYYY format
     my $dt = localtime;
     $dt = $dt->mdy('/');
+    # Prompt user for entry date
     print "Answer Date (MM/DD/YYYY or MM/DD)> ";
     my $date = <STDIN>;
     chomp $date;
+    # If the user enters 'today' in any case, return today's date
     if (uc($date) eq "TODAY") {
         $date = $dt;
-        return $date;
     }
+    # If the user enters MM/DD, we split the components up and assume that
+    #   they want to use the current year.
+    # If the user does not enter MM/DD or MM/DD/YYYY format, or the entered
+    #   date has not happened yet, raise an exception.
+    # If the entered date already exists as a past win for the given name,
+    #   then raise an exception.
+    # Otherwise, return the date.
     my @date_components = split('/', $date);
-    # If the user only entered MM/DD, we will assume it is the current year
     if (scalar @date_components == 2) {
-        push @date_components, "2022";
+        push @date_components, localtime->year;
         $date = join('/', @date_components);
     }
     elsif (scalar @date_components != 3) {
@@ -124,6 +131,12 @@ sub get_validated_date {
     if ($date gt $dt) {
         die "ERROR! You can't have a winner for a day that hasn't happened yet!";
     }
+    my ($name) = @_;
+    my @player_win_dates = @{$players{$name}};
+    if (grep(/^$date$/, @player_win_dates)) {
+        die "ERROR! This player has already won for the date entered!";
+    }
+
     return $date;
 }
 
@@ -153,7 +166,7 @@ sub add_entry {
 
     print_player_table();
     $name = get_validated_name();
-    $date = get_validated_date();
+    $date = get_validated_date($name);
     ($amount, $calculated) = get_validated_amount();
 
     print "The entry you are about to submit will contain these values:\n";
