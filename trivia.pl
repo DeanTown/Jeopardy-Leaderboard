@@ -149,8 +149,11 @@ sub get_validated_amount {
         $amount = "final jeopardy";
         $calculated = 1000;
     }
-    else {
+    elsif ($amount % 100 == 0) {
         $calculated = $amount;
+    }
+    else {
+        die "ERROR! Winning amount must be a multiple of 100!";
     }
     return ($amount, $calculated);
 }
