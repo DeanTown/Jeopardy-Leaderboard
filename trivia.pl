@@ -114,7 +114,6 @@ sub get_validated_names {
     my @names;
     my @valid_names;
     NAME_VALIDATION: while ($input = <STDIN>) {
-        my $loop_control = 1;
         chomp $input;
         @valid_names = ();
         @names = split(',', $input);
@@ -269,7 +268,6 @@ sub add_entry {
     my $date;
     my $amount;
     my $calculated;
-    my $correct_input = 0;
 
     print_player_table();
     @names = get_validated_names();
