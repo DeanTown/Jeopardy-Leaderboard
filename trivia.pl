@@ -213,11 +213,6 @@ sub get_validated_date {
     elsif (scalar @date_components != 3) {
         die "ERROR! Date entered incorrectly ($date).";
     }
-    $date = Time::Piece->strptime($date, "%m/%d/%Y");
-    $date = $date->mdy('/');
-    if ($date gt $dt) {
-        die "ERROR! You can't have a winner for a day that hasn't happened yet!";
-    }
     my (@names) = @_;
     for my $name (@names) {
         my @player_win_dates = @{$players{$name}{win_dates}};
