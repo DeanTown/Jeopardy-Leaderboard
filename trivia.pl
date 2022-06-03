@@ -29,7 +29,6 @@ if (length $prev_month == 1) {
 =begin TODO
 
     - Add standings, both all time and current/past month
-    - factor out updating players hash?
     - main menu to select action
     - add ability to hide certain names from the list for people who are no longer around
 
@@ -49,33 +48,40 @@ sub read_stats {
     while (my $line = <$fh>) {
         if ($csv->parse($line)) {
             my @fields = $csv->fields();
-            # Compile a hash of all players, their winning dates, all time balance,
-            #   current month balance, and previous month balance.
-            my @date_bits = split('/', $fields[1]);
-            my $curr_month_amount = $date_bits[0] == $curr_month 
-                                    && $date_bits[2] == $curr_year ? $fields[3] : 0;
-            my $prev_month_amount = $date_bits[0] == $prev_month 
-                                    && $date_bits[2] == $curr_year ? $fields[3] : 0;
-            # If this player exists in the hash, update the balances and add the entry date
             if (exists $players{$fields[0]}) {
-                $players{$fields[0]}{all_time} += $fields[3];
-                push @{$players{$fields[0]}{win_dates}}, $fields[1];
-                $players{$fields[0]}{curr_month} += $curr_month_amount;
-                $players{$fields[0]}{prev_month} += $prev_month_amount;
+                update_players_hash($fields[0], $fields[1], $fields[3], 0);
             }
-            # Else the player does not exist in the hash yet, create it
             else {
-                $players{$fields[0]} = {
-                    all_time => $fields[3],
-                    curr_month => $curr_month_amount,
-                    prev_month => $prev_month_amount,
-                    win_dates => [$fields[1]],
-                };
+                update_players_hash($fields[0], $fields[1], $fields[3], 1);
             }
         }
     }
     @player_list = sort keys %players;
     close $fh;
+}
+
+sub update_players_hash {
+    # Update players hash
+    my ($name, $date, $calculated, $create) = @_;
+    my @date_bits = split('/', $date);
+    my $curr_month_amount = $date_bits[0] == $curr_month 
+                                    && $date_bits[2] == $curr_year ? $calculated : 0;
+    my $prev_month_amount = $date_bits[0] == $prev_month 
+                            && $date_bits[2] == $curr_year ? $calculated : 0;
+    if ($create) {
+        $players{$name} = {
+                    all_time => $calculated,
+                    curr_month => $curr_month_amount,
+                    prev_month => $prev_month_amount,
+                    win_dates => [$date],
+                };
+    }
+    else {
+        $players{$name}{all_time} += $calculated;
+        push @{$players{$name}{win_dates}}, $date;
+        $players{$name}{curr_month} += $curr_month_amount;
+        $players{$name}{prev_month} += $prev_month_amount;
+    }
 }
 
 sub print_player_table {
@@ -285,13 +291,11 @@ sub add_entry {
             $csv->print($fh, [$name, $date, $amount, $calculated]); 
             close $fh;
             # Update players hash
-            my @date_bits = split('/', $date);
-            $players{$name}{all_time} += $calculated;
-            push @{$players{$name}{win_dates}}, $date;
-            if ($date_bits[0] == $curr_month && $date_bits[2] == $curr_year) {
-                $players{$name}{curr_month} += $calculated;
-            } elsif ($date_bits[0] == $prev_month && $date_bits[2] == $curr_year) {
-                $players{$name}{prev_month} += $calculated;
+            if (exists $players{$name}) {
+                update_players_hash($name, $date, $calculated, 0);
+            }
+            else {
+                update_players_hash($name, $date, $calculated, 1);
             }
         }
         else {
