@@ -8,13 +8,23 @@ use Data::Dumper;
 use Scalar::Util qw(looks_like_number);
 use Time::Piece;
 
-# GLOBAL: declaration of the current jeopardy stats
-my @stats;
 # GLOBAL: instatiating a Text::CSV object to read and write with
 my $csv = Text::CSV->new({ sep_char => ',', eol => $/ });
 # GLOBAL: declare hash of player names to winning dates
 my %players;
 my @player_list;
+# Get the current and previous month for score calculations.
+my $dt = localtime;
+my $curr_month = $dt->mon;
+my $prev_month = $curr_month - 1;
+my $curr_year = $dt->year;
+
+if (length $curr_month == 1) {
+    $curr_month = 0 . $curr_month;
+}
+if (length $prev_month == 1) {
+    $prev_month = 0 . $prev_month;
+}
 
 =begin TODO
 
@@ -44,7 +54,6 @@ my @player_list;
 
 =pod
     Reads all entries from 'stats.csv'
-    Builds an array (@stats) of all existing entries
     Builds a hash (%players) of all existing players mapped with win dates
 =cut
 
@@ -56,13 +65,28 @@ sub read_stats {
     while (my $line = <$fh>) {
         if ($csv->parse($line)) {
             my @fields = $csv->fields();
-            push @stats, \@fields;
-            # Compile a hash of all players and their winning dates
+            # Compile a hash of all players, their winning dates, all time balance,
+            #   current month balance, and previous month balance.
+            my @date_bits = split('/', $fields[1]);
+            my $curr_month_amount = $date_bits[0] == $curr_month 
+                                    && $date_bits[2] == $curr_year ? $fields[3] : 0;
+            my $prev_month_amount = $date_bits[0] == $prev_month 
+                                    && $date_bits[2] == $curr_year ? $fields[3] : 0;
+            # If this player exists in the hash, update the balances and add the entry date
             if (exists $players{$fields[0]}) {
-                push @{$players{$fields[0]}}, $fields[1];
+                $players{$fields[0]}{all_time} += $fields[3];
+                push @{$players{$fields[0]}{win_dates}}, $fields[1];
+                $players{$fields[0]}{curr_month} += $curr_month_amount;
+                $players{$fields[0]}{prev_month} += $prev_month_amount;
             }
+            # Else the player does not exist in the hash yet, create it
             else {
-                $players{$fields[0]} = [$fields[1]];
+                $players{$fields[0]} = {
+                    all_time => $fields[3],
+                    curr_month => $curr_month_amount,
+                    prev_month => $prev_month_amount,
+                    win_dates => [$fields[1]],
+                };
             }
         }
     }
@@ -213,7 +237,7 @@ sub get_validated_date {
     }
     my (@names) = @_;
     for my $name (@names) {
-        my @player_win_dates = @{$players{$name}};
+        my @player_win_dates = @{$players{$name}{win_dates}};
         if (grep(/^$date$/, @player_win_dates)) {
             die "ERROR! ($name) has already won for the date entered!";
         }
@@ -277,8 +301,15 @@ sub add_entry {
             open(my $fh, '>>', $file_name) or die "Error! Could not open '$file_name' $!\n";
             $csv->print($fh, \@new_entry); 
             close $fh;
-            push (@stats, \@new_entry);
-            push @{$players{$new_entry[0]}}, $new_entry[1];
+            # Update players hash
+            my @date_bits = split('/', $date);
+            $players{$name}{all_time} += $calculated;
+            push @{$players{$name}{win_dates}}, $date;
+            if ($date_bits[0] == $curr_month && $date_bits[2] == $curr_year) {
+                $players{$name}{curr_month} += $calculated;
+            } elsif ($date_bits[0] == $prev_month && $date_bits[2] == $curr_year) {
+                $players{$name}{prev_month} += $calculated;
+            }
         }
         else {
             print "Transaction Aborted! No data saved.\n";
@@ -294,8 +325,8 @@ sub menu {
 }
 
 sub main {
-    menu();
     read_stats();
+    menu();
     add_entry();
 }
 
