@@ -20,7 +20,6 @@ my @player_list;
 
     - Add standings, both all time and current/past month
     - main menu to select action
-    - able to enter dates in multiple formats (MM/DD, MM.DD)?
     - add ability to hide certain names from the list for people who are no longer around
 
 =end TODO
@@ -72,6 +71,13 @@ sub print_player_table {
     }
 }
 
+=pod
+    Gets validated input for 1 or more anmes using a helper method `validate_name()` which performs
+        the actual validation.
+    For each name entered, run it through validation and determine whether all names entered are valid
+        or rejected.
+=cut
+
 sub get_validated_names {
     print "Enter player(s) name/number(s) or enter a new player name\n";
     print "To enter multiple existing names, enter as a comma separated list > ";
@@ -99,8 +105,18 @@ sub get_validated_names {
     return @valid_names;
 }
 
+=pod
+    Validates name input for a single name using a number of checks.
+    The input is forced into first letter capitalization so that the user can
+        enter names case insensitive.
+    If the input is a number and exists in `player_list`, then the name is good.
+    If the input exists in the `players` hash, then the name is good.
+    If the input is not a number and doesn't exists in the player hash,
+        give the option to make a new name.
+    Otherwise, the name is invalid.
+=cut
+
 sub validate_name {
-    # Fix capitalization so the user input is case insensitive
     # For each component, make the whole string lowercase, then capitalize
     #   the first letter and append a space.
     # Using a regex, remove the leading (if any) and trailing whitespace,
@@ -135,6 +151,13 @@ sub validate_name {
     print "No such name ($name) found. Try again > ";
     return ($name, 0);
 }
+
+=pod
+    Yay Date & Time programming is fun!
+    Validates the user input date as either MM/DD, MM/DD/YYYY or 'today' case insensitive.
+    Ensures the user cannot enter a date that has not happened yet, or a date
+        on which the player has already won.
+=cut
 
 sub get_validated_date {
     # Get today's date in MM/DD/YYYY format
@@ -178,6 +201,13 @@ sub get_validated_date {
     return $date;
 }
 
+=pod
+    Simple validation since I can't find any specific rules governing Jeopardy's
+        point allocations.
+    Ensures that the number entered is a multiple of 100. Most of the owness is
+        places on the user to enter the numbers correctly.
+=cut
+
 sub get_validated_amount {
     print "Winning Amount > ";
     my $amount = <STDIN>;
@@ -195,6 +225,12 @@ sub get_validated_amount {
     }
     return ($amount, $calculated);
 }
+
+=pod
+    Gathers all the info from the user and compiles it into a new entry to add to the dataset.
+    If the user enters multiple names, the same date and score will be used for each name.
+    Each entry requires manual approval before it is added to the sheet.
+=cut
 
 sub add_entry {
     my $file_name = "stats.csv";
