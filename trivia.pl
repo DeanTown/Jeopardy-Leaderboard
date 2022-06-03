@@ -20,7 +20,6 @@ my @player_list;
 
     - Add standings, both all time and current/past month
     - main menu to select action
-    - able to list multiple names, separated by commas 
     - able to enter dates in multiple formats (MM/DD, MM.DD)?
     - add ability to hide certain names from the list for people who are no longer around
 
@@ -73,46 +72,68 @@ sub print_player_table {
     }
 }
 
-sub get_validated_name {
+sub get_validated_names {
     print "Enter player(s) name/number(s) or enter a new player name\n";
     print "To enter multiple existing names, enter as a comma separated list > ";
-    my $name;
-    NAME_VALIDATION: while ($name = <STDIN>) {
-        chomp $name;
-        # Fix capitalization so the user input is case insensitive
-        # For each component, make the whole string lowercase, then capitalize
-        #   the first letter and append a space.
-        # Using a regex, remove the leading (if any) and trailing whitespace,
-        #   then assign it back the name variable.
-        my @name_components = split(' ', $name);
-        my $fixed_case_name;
-        foreach my $nc (@name_components) {
-            $nc = lc($nc);
-            $nc = ucfirst($nc);
-            $fixed_case_name .= $nc . ' ';
-        }
-        $fixed_case_name =~ s/^\s+|\s+$//g;
-        $name = $fixed_case_name;
-
-        if (looks_like_number($name) and exists $player_list[$name]) {
-            $name = $player_list[$name];
-            last NAME_VALIDATION;
-        }
-        elsif (exists $players{$name}) {
-            last NAME_VALIDATION;
-        }
-        elsif (!looks_like_number($name)) {
-            print "($name) does not exist yet! Create it? [y/n] > ";
-            my $new_name = <STDIN>;
-            chomp $new_name;
-            if (uc($new_name) eq 'Y') {
-                print "New player ($name) created!\n";
-                last NAME_VALIDATION;
+    my $input;
+    my $is_valid_name;
+    my @names;
+    my @valid_names;
+    NAME_VALIDATION: while ($input = <STDIN>) {
+        my $loop_control = 1;
+        chomp $input;
+        @valid_names = ();
+        @names = split(',', $input);
+        foreach my $name (@names) {
+            $name =~ s/^\s+|\s+$//g;
+            ($name, $is_valid_name) = validate_name($name);
+            if ($is_valid_name) {
+                push @valid_names, $name;
+            }
+            else {
+                next NAME_VALIDATION;
             }
         }
-        print "No such name ($name) found. Try again > ";
+        last NAME_VALIDATION;
     }
-    return $name;
+    return @valid_names;
+}
+
+sub validate_name {
+    # Fix capitalization so the user input is case insensitive
+    # For each component, make the whole string lowercase, then capitalize
+    #   the first letter and append a space.
+    # Using a regex, remove the leading (if any) and trailing whitespace,
+    #   then assign it back the name variable.
+    my ($name) = @_;
+    my @name_components = split(' ', $name);
+    my $fixed_case_name;
+    foreach my $nc (@name_components) {
+        $nc = lc($nc);
+        $nc = ucfirst($nc);
+        $fixed_case_name .= $nc . ' ';
+    }
+    $fixed_case_name =~ s/^\s+|\s+$//g;
+    $name = $fixed_case_name;
+
+    if (looks_like_number($name) and exists $player_list[$name]) {
+        $name = $player_list[$name];
+        return ($name, 1);
+    }
+    elsif (exists $players{$name}) {
+        return ($name, 1);
+    }
+    elsif (!looks_like_number($name)) {
+        print "($name) does not exist yet! Create it? [y/n] > ";
+        my $new_name = <STDIN>;
+        chomp $new_name;
+        if (uc($new_name) eq 'Y') {
+            print "New player ($name) created!\n";
+            return ($name, 1);
+        }
+    }
+    print "No such name ($name) found. Try again > ";
+    return ($name, 0);
 }
 
 sub get_validated_date {
@@ -147,12 +168,13 @@ sub get_validated_date {
     if ($date gt $dt) {
         die "ERROR! You can't have a winner for a day that hasn't happened yet!";
     }
-    my ($name) = @_;
-    my @player_win_dates = @{$players{$name}};
-    if (grep(/^$date$/, @player_win_dates)) {
-        die "ERROR! This player has already won for the date entered!";
+    my (@names) = @_;
+    for my $name (@names) {
+        my @player_win_dates = @{$players{$name}};
+        if (grep(/^$date$/, @player_win_dates)) {
+            die "ERROR! ($name) has already won for the date entered!";
+        }
     }
-
     return $date;
 }
 
@@ -177,32 +199,34 @@ sub get_validated_amount {
 sub add_entry {
     my $file_name = "stats.csv";
     my @new_entry;
-    my $name;
+    my @names;
     my $date;
     my $amount;
     my $calculated;
     my $correct_input = 0;
 
     print_player_table();
-    $name = get_validated_name();
-    $date = get_validated_date($name);
+    @names = get_validated_names();
+    $date = get_validated_date(@names);
     ($amount, $calculated) = get_validated_amount();
 
-    print "The entry you are about to submit will contain these values:\n";
-    print "Player -> $name\nDate -> $date\nAmount -> $amount\nCalculated -> $calculated\n";
-    print "Are you sure you want to submit this entry? [y/n] > ";
-    my $submit = <STDIN>;
-    chomp $submit;
-    if (uc($submit) eq 'Y') {
-        push @new_entry, ($name, $date, $amount, $calculated);
-        open(my $fh, '>>', $file_name) or die "Error! Could not open '$file_name' $!\n";
-        $csv->print($fh, \@new_entry); 
-        close $fh;
-        push (@stats, \@new_entry);
-        push @{$players{$new_entry[0]}}, $new_entry[1];
-    }
-    else {
-        print "Transaction Aborted! No data saved.\n";
+    foreach my $name (@names) {
+        print "The entry you are about to submit will contain these values:\n";
+        print "Player -> $name\nDate -> $date\nAmount -> $amount\nCalculated -> $calculated\n";
+        print "Are you sure you want to submit this entry? [y/n] > ";
+        my $submit = <STDIN>;
+        chomp $submit;
+        if (uc($submit) eq 'Y') {
+            push @new_entry, ($name, $date, $amount, $calculated);
+            open(my $fh, '>>', $file_name) or die "Error! Could not open '$file_name' $!\n";
+            $csv->print($fh, \@new_entry); 
+            close $fh;
+            push (@stats, \@new_entry);
+            push @{$players{$new_entry[0]}}, $new_entry[1];
+        }
+        else {
+            print "Transaction Aborted! No data saved.\n";
+        }
     }
 }
 
