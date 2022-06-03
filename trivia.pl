@@ -22,7 +22,6 @@ my @player_list;
     - Better input validation
     - main menu to select action
     - able to list multiple names, separated by commas 
-    - able to write persons name case insensitive
 
 =end TODO
 =cut
@@ -78,6 +77,20 @@ sub get_validated_name {
     my $name;
     NAME_VALIDATION: while ($name = <STDIN>) {
         chomp $name;
+        # Fix capitalization so the user input is case insensitive
+        # For each component, make the whole string lowercase, then capitalize
+        #   the first letter and append a space.
+        # Using a regex, remove the leading (if any) and trailing whitespace,
+        #   then assign it back the name variable.
+        my @name_components = split(' ', $name);
+        my $fixed_case_name;
+        foreach my $nc (@name_components) {
+            $nc = lc($nc);
+            $nc = ucfirst($nc);
+            $fixed_case_name .= $nc . ' ';
+        }
+        $fixed_case_name =~ s/^\s+|\s+$//g;
+        $name = $fixed_case_name;
         if (looks_like_number($name) and exists $player_list[$name]) {
             $name = $player_list[$name];
             last NAME_VALIDATION;
