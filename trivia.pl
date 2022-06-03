@@ -8,12 +8,10 @@ use Data::Dumper;
 use Scalar::Util qw(looks_like_number);
 use Time::Piece;
 
-# GLOBAL: instatiating a Text::CSV object to read and write with
 my $csv = Text::CSV->new({ sep_char => ',', eol => $/ });
-# GLOBAL: declare hash of player names to winning dates
 my %players;
 my @player_list;
-# Get the current and previous month for score calculations.
+my $file_name = "stats.csv";
 my $dt = localtime;
 my $curr_month = $dt->mon;
 my $prev_month = $curr_month - 1;
@@ -41,7 +39,6 @@ if (length $prev_month == 1) {
 =cut
 
 sub read_stats {
-    my $file_name = "stats.csv";
     open(my $fh, '<', $file_name) or die "Error! Could not open '$file_name' $!\n";
     $csv->getline($fh); # skip header
 
@@ -268,7 +265,6 @@ sub get_validated_amount {
 =cut
 
 sub add_entry {
-    my $file_name = "stats.csv";
     my @names;
     my $date;
     my $amount;
