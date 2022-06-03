@@ -8,6 +8,7 @@ use Data::Dumper;
 use Scalar::Util qw(looks_like_number);
 use Time::Piece;
 
+# Global Variables
 my $csv = Text::CSV->new({ sep_char => ',', eol => $/ });
 my %players;
 my @player_list;
@@ -17,12 +18,8 @@ my $curr_month = $dt->mon;
 my $prev_month = $curr_month - 1;
 my $curr_year = $dt->year;
 
-if (length $curr_month == 1) {
-    $curr_month = 0 . $curr_month;
-}
-if (length $prev_month == 1) {
-    $prev_month = 0 . $prev_month;
-}
+if (length $curr_month == 1) { $curr_month = 0 . $curr_month; }
+if (length $prev_month == 1) { $prev_month = 0 . $prev_month; }
 
 =begin TODO
 
@@ -118,7 +115,6 @@ sub get_validated_names {
         @valid_names = ();
         @names = split(',', $input);
         foreach my $name (@names) {
-            $name =~ s/^\s+|\s+$//g;
             ($name, $is_valid_name) = validate_name($name);
             if ($is_valid_name) {
                 push @valid_names, $name;
