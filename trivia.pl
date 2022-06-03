@@ -21,6 +21,8 @@ my @player_list;
     - Add standings, both all time and current/past month
     - main menu to select action
     - able to list multiple names, separated by commas 
+    - able to enter dates in multiple formats (MM/DD, MM.DD)?
+    - add ability to hide certain names from the list for people who are no longer around
 
 =end TODO
 =cut
@@ -72,7 +74,8 @@ sub print_player_table {
 }
 
 sub get_validated_name {
-    print "Enter player name/number or enter a new player name > ";
+    print "Enter player(s) name/number(s) or enter a new player name\n";
+    print "To enter multiple existing names, enter as a comma separated list > ";
     my $name;
     NAME_VALIDATION: while ($name = <STDIN>) {
         chomp $name;
