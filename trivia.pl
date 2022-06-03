@@ -19,7 +19,6 @@ my @player_list;
 =begin TODO
 
     - Add standings, both all time and current/past month
-    - Better input validation
     - main menu to select action
     - able to list multiple names, separated by commas 
 
@@ -91,6 +90,7 @@ sub get_validated_name {
         }
         $fixed_case_name =~ s/^\s+|\s+$//g;
         $name = $fixed_case_name;
+
         if (looks_like_number($name) and exists $player_list[$name]) {
             $name = $player_list[$name];
             last NAME_VALIDATION;
@@ -194,7 +194,9 @@ sub add_entry {
         push @new_entry, ($name, $date, $amount, $calculated);
         open(my $fh, '>>', $file_name) or die "Error! Could not open '$file_name' $!\n";
         $csv->print($fh, \@new_entry); 
-        close $fh
+        close $fh;
+        push (@stats, \@new_entry);
+        push @{$players{$new_entry[0]}}, $new_entry[1];
     }
     else {
         print "Transaction Aborted! No data saved.\n";
