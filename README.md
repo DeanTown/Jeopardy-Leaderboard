@@ -4,7 +4,7 @@
 ### History
 ___
 
-After Steve Brooks left in May 2022, I have taken over morning Jeopardy to honor him, because it's fun, and because I'm bad at answering the questions. Steve used a google sheet to keep track of all the stats and calculate monthly rankings, but after changing over then month once I thought it would be way more fun to write a program to do it for me.
+After Steve Brooks left in May 2022, I took over morning Jeopardy because it's fun, and because I'm bad at answering the questions. Steve used a google sheet to keep track of all the stats and calculate monthly rankings, but after changing over the month once, I thought it would be way more fun to write a program to do it for me.
 
 The movitvation to choose Perl was pretty simple. I wanted a standalone scripting language that wasn't python or something I had used before. Perl fit the bill and it has a huge support community, plus I was intrigued by some of the syntactical weirdness as well as its similarity to C++ which was my first favorite language.
 
