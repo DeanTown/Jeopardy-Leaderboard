@@ -263,7 +263,6 @@ sub get_validated_amount {
 
 sub add_entry {
     my $file_name = "stats.csv";
-    my @new_entry;
     my @names;
     my $date;
     my $amount;
@@ -282,9 +281,8 @@ sub add_entry {
         my $submit = <STDIN>;
         chomp $submit;
         if (uc($submit) eq 'Y') {
-            push @new_entry, ($name, $date, $amount, $calculated);
             open(my $fh, '>>', $file_name) or die "Error! Could not open '$file_name' $!\n";
-            $csv->print($fh, \@new_entry); 
+            $csv->print($fh, [$name, $date, $amount, $calculated]); 
             close $fh;
             # Update players hash
             my @date_bits = split('/', $date);
