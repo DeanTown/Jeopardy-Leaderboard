@@ -29,23 +29,7 @@ if (length $prev_month == 1) {
 =begin TODO
 
     - Add standings, both all time and current/past month
-        - To achieve this, we need all time total for each player, and monthly roundup (maybe
-            previous month roundup too). To do this, rebuild the players hash to look like this:
-            {
-                'Oliver' =>
-                            {
-                                'all_time' => 6000,
-                                'current_month' => 1000,
-                                'previous_month' => 2000,
-                                'win_dates' =>
-                                                [
-                                                    01/15/2022,
-                                                    04/22/2022,
-                                                    05/12/2022,
-                                                    06/01/2022,
-                                                ]
-                            }
-            }
+    - factor out updating players hash?
     - main menu to select action
     - add ability to hide certain names from the list for people who are no longer around
 
@@ -188,7 +172,8 @@ sub validate_name {
             print "New player ($name) created!\n";
             # TODO: add new player to player_list. The issue is player_list is
             #   sorted alphabetically so adding a new player could mess that up for
-            #   any other names entered.
+            #   any other names entered. Maybe add the name at the very end after the
+            #   entries are added
             return ($name, 1);
         }
     }
