@@ -40,7 +40,7 @@ if (length $prev_month == 1) { $prev_month = 0 . $prev_month; }
 sub read_stats {
     open(my $fh, '<', $file_name) or die "Error! Could not open '$file_name' $!\n";
     $csv->getline($fh); # skip header
-
+    %players = ();
     while (my $line = <$fh>) {
         if ($csv->parse($line)) {
             my @fields = $csv->fields();
@@ -291,6 +291,18 @@ sub add_entry {
     }
 }
 
+sub standings {
+    print_sorted_standings('curr_month');
+    print_sorted_standings('prev_month');
+    print_sorted_standings('all_time');
+}
+
+sub print_sorted_standings {
+    my ($timescale) = @_;
+    # build a new hash with keys as score and values as names in order
+    #   to sort them properly
+}
+
 sub menu {
     binmode(STDOUT, ":utf8");
     print "\x{2554}" . "\x{2550}" x 45 . "\x{2557}\n";
@@ -319,7 +331,7 @@ sub main {
             add_entry();
         }
         elsif ($input eq '2') {
-            # standings();
+            standings();
         }
         else {
             print "ERROR! ($input) is not a menu option!\n";
