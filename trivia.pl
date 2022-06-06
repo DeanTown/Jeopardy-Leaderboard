@@ -301,6 +301,9 @@ sub print_sorted_standings {
     my ($timescale) = @_;
     # build a new hash with keys as score and values as names in order
     #   to sort them properly
+    foreach my $name (sort {$players{$b}{$timescale} <=> $players{$a}{$timescale}} keys %players) {
+        printf "%-12s %s\n", $name, $players{$name}{$timescale};
+    }
 }
 
 sub menu {
