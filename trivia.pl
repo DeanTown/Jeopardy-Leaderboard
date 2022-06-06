@@ -7,6 +7,7 @@ use Text::CSV;
 use Data::Dumper;
 use Scalar::Util qw(looks_like_number);
 use Time::Piece;
+use Term::ANSIScreen qw(:screen :cursor);
 
 # Global Variables
 my $csv = Text::CSV->new({ sep_char => ',', eol => $/ });
@@ -26,6 +27,7 @@ if (length $prev_month == 1) { $prev_month = 0 . $prev_month; }
     - Add standings, both all time and current/past month
     - main menu to select action
     - add ability to hide certain names from the list for people who are no longer around
+    - add logging functionality to see the actions performed?
 
 =end TODO
 =cut
@@ -294,12 +296,40 @@ sub menu {
     print "\x{2554}" . "\x{2550}" x 45 . "\x{2557}\n";
     print "\x{2551} Welcome to the OnLogic Jeopardy Leaderboad! \x{2551}\n";
     print "\x{255A}" . "\x{2550}" x 45 . "\x{255D}\n";
+
+    print "[1] Add new entry\n";
+    print "[2] See standings\n";
 }
 
 sub main {
-    read_stats();
-    menu();
-    add_entry();
+    my $clear_screen = cls();
+    my $input;
+
+    do {
+        print $clear_screen;
+        locate;
+
+        read_stats();
+        menu();
+
+        print "> ";
+        $input = <STDIN>;
+        chomp $input;
+        if ($input eq '1') {
+            add_entry();
+        }
+        elsif ($input eq '2') {
+            # standings();
+        }
+        else {
+            print "ERROR! ($input) is not a menu option!\n";
+        }
+
+        print "\nPerform another action? [y/n] > ";
+        $input = <STDIN>;
+        chomp $input;
+    } while (uc($input) eq 'Y')
+    
 }
 
 main();
