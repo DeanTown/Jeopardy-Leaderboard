@@ -9,11 +9,13 @@ use Scalar::Util qw(looks_like_number);
 use Time::Piece;
 use Term::ANSIScreen qw(:screen :cursor);
 use Term::ReadKey;
+use v5.10;
 
 # Global Variables
 my $csv = Text::CSV->new({ sep_char => ',', eol => $/ });
 my %players;
 my @player_list;
+my %hidden_players;
 my $file_name = "stats.csv";
 my $dt = localtime;
 
@@ -30,12 +32,19 @@ my ($wchar, $hchar, $wpixels, $hpixels) = GetTerminalSize();
     - make standings more robust and clearer
     - main menu prettier, and have current and past months top 3 players
     - add ability to hide certain names from the list for people who are no longer around
+        this would mean they would no longer show up in standings, wouldn't be able to have new
+        entries submitted, etc.
     - add logging functionality to see the actions performed?
     - write install script to auto install needed modules
     - have an option to be able to write in custom formulas for data analysis
         similar to: 'Allison[all_time] + Dan[curr_month]'
         and get something back. This is a boring formula example, maybe you could put in keywords
         like 'monthly' and get the average score for a player over that last X months?
+    - when writing to file, if the program crashes then data could be lost or only partially written.
+        To avoid this: switch over from reading and writing to the same file, to writing to a temp file
+        then deleting the old "main" file and renaming the temp file as the "main" one.
+        This will probably only be necessary when doing things with the hidden players as the other
+        file writing at this point is just appending to the stats file.
 
 =end TODO
 =cut
@@ -79,6 +88,7 @@ sub update_players_hash {
                     prev_month => $prev_month_amount,
                     win_dates => [$date],
                 };
+        $hidden_players{$name} = 0;
     }
     else {
         $players{$name}{all_time} += $calculated;
@@ -221,9 +231,11 @@ sub get_validated_date {
     }
     my (@names) = @_;
     for my $name (@names) {
-        my @player_win_dates = @{$players{$name}{win_dates}};
-        if (grep(/^$date$/, @player_win_dates)) {
-            die "ERROR! ($name) has already won for the date entered!";
+        if (exists $players{$name}{win_dates}) {
+            my @player_win_dates = @{$players{$name}{win_dates}};
+            if (grep(/^$date$/, @player_win_dates)) {
+                die "ERROR! ($name) has already won for the date entered!";
+            }
         }
     }
     return $date;
@@ -317,6 +329,34 @@ sub print_sorted_standings {
     }
 }
 
+sub modify_player_visibility {
+    # any players that are newly created are added to the hidden_players hash,
+    #   so what this needs to do is get current hidden players, allow for updates and write to file
+    # allow the user to hide/show 1 or more players at a time
+    my $file_name = "hidden.csv";
+    my $fh;
+
+    # the hidden_players hash is built while reading in the data and by default all the players
+    #   are set to visible.
+    # this reads from the file and updates any existing keys with the saved state
+    open($fh, '<', $file_name) or die "ERROR! Could not open '$file_name' $!\n";
+    while (my $line = <$fh>) {
+        if ($csv->parse($line)) {
+            my @fields = $csv->fields();
+            $hidden_players{$fields[0]} = $fields[1];
+        }
+    }
+
+    # Let the user modify visibility here
+
+    # After the user has modified visibility, write the new values to hidden.csv
+    open($fh, '>', $file_name) or die "ERROR! Could not open '$file_name' $!\n";
+    foreach my $name (keys %hidden_players) {
+        $csv->print($fh, [$name, $hidden_players{$name}]);
+    }
+    close $fh;
+}
+
 sub menu {
     binmode(STDOUT, ":utf8");
     print "\x{2554}" . "\x{2550}" x 45 . "\x{2557}\n";
@@ -325,6 +365,7 @@ sub menu {
 
     print "[1] Add new entry\n";
     print "[2] See standings\n";
+    print "[3] Hide / Show player\n";
 }
 
 sub main {
@@ -341,15 +382,20 @@ sub main {
         print "> ";
         $input = <STDIN>;
         chomp $input;
-        if ($input eq '1') {
-            add_entry();
-        }
-        elsif ($input eq '2') {
-            print $clear_screen;
-            standings();
-        }
-        else {
-            print "ERROR! ($input) is not a menu option!\n";
+        given ($input) {
+            when (1) {
+                add_entry();
+            }
+            when (2) {
+                print $clear_screen;
+                standings();
+            }
+            when (3) {
+                modify_player_visibility();
+            }
+            default {
+                print "ERROR! ($input) is not a menu option!\n";
+            }
         }
 
         print "\nPerform another action? [y/n] > ";
