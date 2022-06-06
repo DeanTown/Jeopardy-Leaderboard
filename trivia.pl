@@ -27,8 +27,8 @@ my ($wchar, $hchar, $wpixels, $hpixels) = GetTerminalSize();
 
 =begin TODO
 
-    - Add standings, both all time and current/past month
-    - main menu to select action
+    - make standings more robust and clearer
+    - main menu prettier, and have current and past months top 3 players
     - add ability to hide certain names from the list for people who are no longer around
     - add logging functionality to see the actions performed?
     - write install script to auto install needed modules
@@ -46,7 +46,7 @@ my ($wchar, $hchar, $wpixels, $hpixels) = GetTerminalSize();
 =cut
 
 sub read_stats {
-    open(my $fh, '<', $file_name) or die "Error! Could not open '$file_name' $!\n";
+    open(my $fh, '<', $file_name) or die "ERROR! Could not open '$file_name' $!\n";
     $csv->getline($fh); # skip header
     %players = ();
     while (my $line = <$fh>) {
@@ -278,7 +278,7 @@ sub add_entry {
         my $submit = <STDIN>;
         chomp $submit;
         if (uc($submit) eq 'Y') {
-            open(my $fh, '>>', $file_name) or die "Error! Could not open '$file_name' $!\n";
+            open(my $fh, '>>', $file_name) or die "ERROR! Could not open '$file_name' $!\n";
             $csv->print($fh, [$name, $date, $amount, $calculated]); 
             close $fh;
             # Update players hash
@@ -296,16 +296,19 @@ sub add_entry {
 }
 
 sub standings {
-    print_sorted_standings('curr_month', 1);
-    print_sorted_standings('prev_month', 32);
-    print_sorted_standings('all_time', 64);
+    print_sorted_standings('curr_month', 'CURRENT MONTH', 1);
+    print_sorted_standings('prev_month', 'PREVIOUS MONTH', 32);
+    print_sorted_standings('all_time', 'ALL TIME', 64);
 }
 
 sub print_sorted_standings {
-    my ($timescale, $tab) = @_;
-    # build a new hash with keys as score and values as names in order
-    #   to sort them properly
+    my ($timescale, $header, $tab) = @_;
     my $row = 1;
+    # print header row
+    locate $row, $tab;
+    print "$header\n";
+    $row++;
+    # print player stats
     foreach my $name (sort {$players{$b}{$timescale} <=> $players{$a}{$timescale}} keys %players) {
         locate $row, $tab;
         printf "%-12s %s\n", $name, $players{$name}{$timescale};
