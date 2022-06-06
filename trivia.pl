@@ -178,10 +178,6 @@ sub validate_name {
         chomp $new_name;
         if (uc($new_name) eq 'Y') {
             print "New player ($name) created!\n";
-            # TODO: add new player to player_list. The issue is player_list is
-            #   sorted alphabetically so adding a new player could mess that up for
-            #   any other names entered. Maybe add the name at the very end after the
-            #   entries are added
             return ($name, 1);
         }
     }
