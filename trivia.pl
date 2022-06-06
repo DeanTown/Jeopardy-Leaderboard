@@ -8,6 +8,7 @@ use Data::Dumper;
 use Scalar::Util qw(looks_like_number);
 use Time::Piece;
 use Term::ANSIScreen qw(:screen :cursor);
+use Term::ReadKey;
 
 # Global Variables
 my $csv = Text::CSV->new({ sep_char => ',', eol => $/ });
@@ -15,12 +16,14 @@ my %players;
 my @player_list;
 my $file_name = "stats.csv";
 my $dt = localtime;
+
 my $curr_month = $dt->mon;
 my $prev_month = $curr_month - 1;
 my $curr_year = $dt->year;
-
 if (length $curr_month == 1) { $curr_month = 0 . $curr_month; }
 if (length $prev_month == 1) { $prev_month = 0 . $prev_month; }
+
+my ($wchar, $hchar, $wpixels, $hpixels) = GetTerminalSize();
 
 =begin TODO
 
@@ -28,6 +31,11 @@ if (length $prev_month == 1) { $prev_month = 0 . $prev_month; }
     - main menu to select action
     - add ability to hide certain names from the list for people who are no longer around
     - add logging functionality to see the actions performed?
+    - write install script to auto install needed modules
+    - have an option to be able to write in custom formulas for data analysis
+        similar to: 'Allison[all_time] + Dan[curr_month]'
+        and get something back. This is a boring formula example, maybe you could put in keywords
+        like 'monthly' and get the average score for a player over that last X months?
 
 =end TODO
 =cut
@@ -292,17 +300,21 @@ sub add_entry {
 }
 
 sub standings {
-    print_sorted_standings('curr_month');
-    print_sorted_standings('prev_month');
-    print_sorted_standings('all_time');
+    print_sorted_standings('curr_month', 1);
+    print_sorted_standings('prev_month', 32);
+    print_sorted_standings('all_time', 64);
 }
 
 sub print_sorted_standings {
-    my ($timescale) = @_;
+    my ($timescale, $tab) = @_;
     # build a new hash with keys as score and values as names in order
     #   to sort them properly
+    my $row = 1;
     foreach my $name (sort {$players{$b}{$timescale} <=> $players{$a}{$timescale}} keys %players) {
+        locate $row, $tab;
         printf "%-12s %s\n", $name, $players{$name}{$timescale};
+        if ($hchar-2 == $row) { last; }
+        $row++;
     }
 }
 
@@ -334,6 +346,7 @@ sub main {
             add_entry();
         }
         elsif ($input eq '2') {
+            print $clear_screen;
             standings();
         }
         else {
