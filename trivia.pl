@@ -188,10 +188,10 @@ sub validate_name {
         $name = $player_list[$name];
         return ($name, 1);
     }
-    elsif (exists $players{$name}) {
+    elsif (exists $players{$name} and $hidden_players{$name}) {
         return ($name, 1);
     }
-    elsif (!looks_like_number($name)) {
+    elsif (!looks_like_number($name) and !exists $hidden_players{$name}) {
         print "($name) does not exist yet! Create it? [y/n] > ";
         my $new_name = <STDIN>;
         chomp $new_name;
@@ -199,6 +199,10 @@ sub validate_name {
             print "New player ($name) created!\n";
             return ($name, 1);
         }
+    }
+    elsif (!$hidden_players{$name}) {
+        print "($name) exists, but is hidden. Try again > ";
+        return ($name, 0);
     }
     print "No such name ($name) found. Try again > ";
     return ($name, 0);
