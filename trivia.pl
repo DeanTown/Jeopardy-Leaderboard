@@ -16,8 +16,11 @@ my $csv = Text::CSV->new({ sep_char => ',', eol => $/ });
 my %players;
 my @player_list;
 my %hidden_players;
-my $file_name = "stats.csv";
+my $stats_file = "stats.csv";
+my $hidden_file = "visible.csv";
 my $dt = localtime;
+my $VISIBLE = 1;
+my $HIDDEN = 0;
 
 my $curr_month = $dt->mon;
 my $prev_month = $curr_month - 1;
@@ -55,7 +58,7 @@ my ($wchar, $hchar, $wpixels, $hpixels) = GetTerminalSize();
 =cut
 
 sub read_stats {
-    open(my $fh, '<', $file_name) or die "ERROR! Could not open '$file_name' $!\n";
+    open(my $fh, '<', $stats_file) or die "ERROR! Could not open '$stats_file' $!\n";
     $csv->getline($fh); # skip header
     %players = ();
     while (my $line = <$fh>) {
@@ -69,7 +72,7 @@ sub read_stats {
             }
         }
     }
-    @player_list = sort keys %players;
+    determine_player_visibility();
     close $fh;
 }
 
@@ -88,7 +91,7 @@ sub update_players_hash {
                     prev_month => $prev_month_amount,
                     win_dates => [$date],
                 };
-        $hidden_players{$name} = 0;
+        $hidden_players{$name} = 1;
     }
     else {
         $players{$name}{all_time} += $calculated;
@@ -99,17 +102,21 @@ sub update_players_hash {
 }
 
 sub print_player_table {
+    my ($show_hidden) = @_;
     my $rows = 5;
+    my @to_print = !$show_hidden ? sort keys %hidden_players : @player_list;
     for (0..$rows-1) {
-        for (my $i = $_; $i < scalar @player_list; $i+=$rows) {
-            if (length $player_list[$i] > 8) {
-                print "[$i] $player_list[$i]\t";
+        for (my $i = $_; $i < scalar @to_print; $i+=$rows) {
+            my $name = $to_print[$i];
+            my $idx = !$hidden_players{$name} ? 'HID' : $i;
+            if (length $name > 8) {
+                print "[$idx] $name\t";
             }
-            elsif (length $player_list[$i] < 4) {
-                print "[$i] $player_list[$i]\t\t\t";
+            elsif (length $name < 4) {
+                print "[$idx] $name\t\t\t";
             }
             else {
-                print "[$i] $player_list[$i]\t\t";
+                print "[$idx] $name\t\t";
             }
         }
         print "\n";
@@ -278,7 +285,7 @@ sub add_entry {
     my $amount;
     my $calculated;
 
-    print_player_table();
+    print_player_table($VISIBLE);
     @names = get_validated_names();
     $date = get_validated_date(@names);
     ($amount, $calculated) = get_validated_amount();
@@ -290,7 +297,7 @@ sub add_entry {
         my $submit = <STDIN>;
         chomp $submit;
         if (uc($submit) eq 'Y') {
-            open(my $fh, '>>', $file_name) or die "ERROR! Could not open '$file_name' $!\n";
+            open(my $fh, '>>', $stats_file) or die "ERROR! Could not open '$stats_file' $!\n";
             $csv->print($fh, [$name, $date, $amount, $calculated]); 
             close $fh;
             # Update players hash
@@ -329,28 +336,38 @@ sub print_sorted_standings {
     }
 }
 
-sub modify_player_visibility {
-    # any players that are newly created are added to the hidden_players hash,
-    #   so what this needs to do is get current hidden players, allow for updates and write to file
-    # allow the user to hide/show 1 or more players at a time
-    my $file_name = "hidden.csv";
+sub determine_player_visibility {
     my $fh;
-
     # the hidden_players hash is built while reading in the data and by default all the players
     #   are set to visible.
     # this reads from the file and updates any existing keys with the saved state
-    open($fh, '<', $file_name) or die "ERROR! Could not open '$file_name' $!\n";
+    open($fh, '<', $hidden_file) or die "ERROR! Could not open '$hidden_file' $!\n";
+    @player_list = ();
     while (my $line = <$fh>) {
         if ($csv->parse($line)) {
             my @fields = $csv->fields();
             $hidden_players{$fields[0]} = $fields[1];
+            if ($fields[1]) {
+                push @player_list, $fields[0];
+            }
         }
     }
+    @player_list = sort @player_list;
+    close $fh;
+}
 
+sub modify_player_visibility {
+    # any players that are newly created are added to the hidden_players hash,
+    #   so what this needs to do is get current hidden players, allow for updates and write to file
+    # allow the user to hide/show 1 or more players at a time
+    my $fh;
+
+    # print player table with some indication that a player is hidden
+    print_player_table($HIDDEN);
     # Let the user modify visibility here
 
     # After the user has modified visibility, write the new values to hidden.csv
-    open($fh, '>', $file_name) or die "ERROR! Could not open '$file_name' $!\n";
+    open($fh, '>', $hidden_file) or die "ERROR! Could not open '$hidden_file' $!\n";
     foreach my $name (keys %hidden_players) {
         $csv->print($fh, [$name, $hidden_players{$name}]);
     }
@@ -382,15 +399,17 @@ sub main {
         print "> ";
         $input = <STDIN>;
         chomp $input;
+        print $clear_screen;
         given ($input) {
             when (1) {
+                locate;
                 add_entry();
             }
             when (2) {
-                print $clear_screen;
                 standings();
             }
             when (3) {
+                locate;
                 modify_player_visibility();
             }
             default {
