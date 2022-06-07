@@ -28,11 +28,8 @@ my $curr_year = $dt->year;
 if (length $curr_month == 1) { $curr_month = 0 . $curr_month; }
 if (length $prev_month == 1) { $prev_month = 0 . $prev_month; }
 
-my ($wchar, $hchar, $wpixels, $hpixels) = GetTerminalSize();
-
 =begin TODO
 
-    - make standings more robust and clearer
     - main menu prettier, and have current and past months top 3 players
     - add ability to hide certain names from the list for people who are no longer around
         this would mean they would no longer show up in standings, wouldn't be able to have new
@@ -327,6 +324,7 @@ sub standings {
 }
 
 sub print_sorted_standings {
+    my ($wchar, $hchar, $wpixels, $hpixels) = GetTerminalSize();
     my ($timescale, $header, $tab) = @_;
     my $row = 1;
     # print header row
