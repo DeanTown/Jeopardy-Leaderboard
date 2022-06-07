@@ -128,12 +128,14 @@ sub print_player_table {
 =cut
 
 sub get_validated_names {
-    print "Enter player(s) name/number(s) or enter a new player name\n";
-    print "To enter multiple existing names, enter as a comma separated list > ";
     my $input;
     my $is_valid_name;
     my @names;
     my @valid_names;
+    my ($show_hidden) = @_;
+    print_player_table($show_hidden);
+    print "Enter player(s) name/number(s) or enter a new player name\n";
+    print "To enter multiple existing names, enter as a comma separated list > ";
     NAME_VALIDATION: while ($input = <STDIN>) {
         chomp $input;
         @valid_names = ();
@@ -287,8 +289,7 @@ sub add_entry {
     my $calculated;
     my $show_hidden = 0;
 
-    print_player_table($show_hidden);
-    @names = get_validated_names();
+    @names = get_validated_names($show_hidden);
     $date = get_validated_date(@names);
     ($amount, $calculated) = get_validated_amount();
 
@@ -368,9 +369,8 @@ sub modify_player_visibility {
     my $fh;
     my $show_hidden = 1;
 
-    # print player table with some indication that a player is hidden
-    print_player_table($show_hidden);
     # Let the user modify visibility here
+    my @names = get_validated_names($show_hidden);
 
     # After the user has modified visibility, write the new values to hidden.csv
     open($fh, '>', $hidden_file) or die "ERROR! Could not open '$hidden_file' $!\n";
