@@ -19,8 +19,6 @@ my %hidden_players;
 my $stats_file = "stats.csv";
 my $hidden_file = "visible.csv";
 my $dt = localtime;
-my $VISIBLE = 1;
-my $HIDDEN = 0;
 
 my $curr_month = $dt->mon;
 my $prev_month = $curr_month - 1;
@@ -103,7 +101,7 @@ sub update_players_hash {
 sub print_player_table {
     my ($show_hidden) = @_;
     my $rows = 5;
-    my @to_print = !$show_hidden ? sort keys %hidden_players : @player_list;
+    my @to_print = $show_hidden ? sort keys %hidden_players : @player_list;
     for (0..$rows-1) {
         for (my $i = $_; $i < scalar @to_print; $i+=$rows) {
             my $name = $to_print[$i];
@@ -287,8 +285,9 @@ sub add_entry {
     my $date;
     my $amount;
     my $calculated;
+    my $show_hidden = 0;
 
-    print_player_table($VISIBLE);
+    print_player_table($show_hidden);
     @names = get_validated_names();
     $date = get_validated_date(@names);
     ($amount, $calculated) = get_validated_amount();
@@ -367,9 +366,10 @@ sub modify_player_visibility {
     #   so what this needs to do is get current hidden players, allow for updates and write to file
     # allow the user to hide/show 1 or more players at a time
     my $fh;
+    my $show_hidden = 1;
 
     # print player table with some indication that a player is hidden
-    print_player_table($HIDDEN);
+    print_player_table($show_hidden);
     # Let the user modify visibility here
 
     # After the user has modified visibility, write the new values to hidden.csv
