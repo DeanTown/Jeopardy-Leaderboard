@@ -98,10 +98,32 @@ sub update_players_hash {
     }
 }
 
+sub determine_player_visibility {
+    my $fh;
+
+    # the hidden_players hash is built while reading in the data and by default all the players
+    #   are set to visible.
+    # this reads from the file and updates any existing keys with the saved state
+    open($fh, '<', $hidden_file) or die "ERROR! Could not open '$hidden_file' $!\n";
+    @player_list = ();
+    while (my $line = <$fh>) {
+        if ($csv->parse($line)) {
+            my @fields = $csv->fields();
+            $hidden_players{$fields[0]} = $fields[1];
+            if ($fields[1]) {
+                push @player_list, $fields[0];
+            }
+        }
+    }
+    @player_list = sort @player_list;
+    close $fh;
+}
+
 sub print_player_table {
     my ($show_hidden) = @_;
     my $rows = 5;
     my @to_print = $show_hidden ? sort keys %hidden_players : @player_list;
+
     for (0..$rows-1) {
         for (my $i = $_; $i < scalar @to_print; $i+=$rows) {
             my $name = $to_print[$i];
@@ -133,9 +155,11 @@ sub get_validated_names {
     my @names;
     my @valid_names;
     my ($show_hidden) = @_;
+
     print_player_table($show_hidden);
     print "Enter player(s) name/number(s) or enter a new player name\n";
     print "To enter multiple existing names, enter as a comma separated list > ";
+
     NAME_VALIDATION: while ($input = <STDIN>) {
         chomp $input;
         @valid_names = ();
@@ -173,6 +197,7 @@ sub validate_name {
     my ($name) = @_;
     my @name_components = split(' ', $name);
     my $fixed_case_name;
+    
     foreach my $nc (@name_components) {
         $nc = lc($nc);
         $nc = ucfirst($nc);
@@ -340,26 +365,6 @@ sub print_sorted_standings {
             $row++;
         }
     }
-}
-
-sub determine_player_visibility {
-    my $fh;
-    # the hidden_players hash is built while reading in the data and by default all the players
-    #   are set to visible.
-    # this reads from the file and updates any existing keys with the saved state
-    open($fh, '<', $hidden_file) or die "ERROR! Could not open '$hidden_file' $!\n";
-    @player_list = ();
-    while (my $line = <$fh>) {
-        if ($csv->parse($line)) {
-            my @fields = $csv->fields();
-            $hidden_players{$fields[0]} = $fields[1];
-            if ($fields[1]) {
-                push @player_list, $fields[0];
-            }
-        }
-    }
-    @player_list = sort @player_list;
-    close $fh;
 }
 
 sub modify_player_visibility {
