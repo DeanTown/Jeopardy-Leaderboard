@@ -36,7 +36,9 @@ my ($wchar, $hchar, $wpixels, $hpixels) = GetTerminalSize();
     - main menu prettier, and have current and past months top 3 players
     - add ability to hide certain names from the list for people who are no longer around
         this would mean they would no longer show up in standings, wouldn't be able to have new
-        entries submitted, etc.
+        entries submitted, etc. Hidden players would also need to have special checks, i.e. if
+        you enter the name of a hidden person, instead of creating a new player with a duplicated name
+        it should tell you that player is hidden.
     - add logging functionality to see the actions performed?
     - write install script to auto install needed modules
     - have an option to be able to write in custom formulas for data analysis
@@ -330,9 +332,11 @@ sub print_sorted_standings {
     # print player stats
     foreach my $name (sort {$players{$b}{$timescale} <=> $players{$a}{$timescale}} keys %players) {
         locate $row, $tab;
-        printf "%-12s %s\n", $name, $players{$name}{$timescale};
         if ($hchar-2 == $row) { last; }
-        $row++;
+        if ($hidden_players{$name}) {
+            printf "%-12s %s\n", $name, $players{$name}{$timescale};
+            $row++;
+        }
     }
 }
 
