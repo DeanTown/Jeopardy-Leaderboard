@@ -74,13 +74,13 @@ sub read_stats {
 }
 
 sub update_players_hash {
-    # Update players hash
     my ($name, $date, $calculated, $create) = @_;
     my @date_bits = split('/', $date);
     my $curr_month_amount = $date_bits[0] == $curr_month 
                                     && $date_bits[2] == $curr_year ? $calculated : 0;
     my $prev_month_amount = $date_bits[0] == $prev_month 
                             && $date_bits[2] == $curr_year ? $calculated : 0;
+
     if ($create) {
         $players{$name} = {
                     all_time => $calculated,
@@ -182,22 +182,19 @@ sub get_validated_names {
     Validates name input for a single name using a number of checks.
     The input is forced into first letter capitalization so that the user can
         enter names case insensitive.
-    If the input is a number and exists in `player_list`, then the name is good.
-    If the input exists in the `players` hash, then the name is good.
-    If the input is not a number and doesn't exists in the player hash,
+    If the input is a number, exists in `player_list`, and is not hidden, then the name is good.
+    If the input exists in the `players` hash, and is not hidden, then the name is good.
+    If the input is not a number, doesn't exists in the player hash, and is not hidden,
         give the option to make a new name.
+    If the input exists but is hidden, the name is invalid.
     Otherwise, the name is invalid.
 =cut
 
 sub validate_name {
-    # For each component, make the whole string lowercase, then capitalize
-    #   the first letter and append a space.
-    # Using a regex, remove the leading (if any) and trailing whitespace,
-    #   then assign it back the name variable.
     my ($name) = @_;
     my @name_components = split(' ', $name);
     my $fixed_case_name;
-    
+    # Format name to have first letter capitalization and no spaces on either side
     foreach my $nc (@name_components) {
         $nc = lc($nc);
         $nc = ucfirst($nc);
@@ -232,9 +229,9 @@ sub validate_name {
 
 =pod
     Yay Date & Time programming is fun!
-    Validates the user input date as either MM/DD, MM/DD/YYYY or 'today' case insensitive.
-    Ensures the user cannot enter a date that has not happened yet, or a date
-        on which the player has already won.
+    Validates the user input date as either MM/DD (assuming current year), MM/DD/YYYY
+        or 'today' case insensitive.
+    Ensures the user cannot enter a date on which the player has already won.
 =cut
 
 sub get_validated_date {
@@ -249,13 +246,6 @@ sub get_validated_date {
     if (uc($date) eq "TODAY") {
         $date = $dt;
     }
-    # If the user enters MM/DD, we split the components up and assume that
-    #   they want to use the current year.
-    # If the user does not enter MM/DD or MM/DD/YYYY format, or the entered
-    #   date has not happened yet, raise an exception.
-    # If the entered date already exists as a past win for the given name,
-    #   then raise an exception.
-    # Otherwise, return the date.
     my @date_components = split('/', $date);
     if (scalar @date_components == 2) {
         push @date_components, localtime->year;
