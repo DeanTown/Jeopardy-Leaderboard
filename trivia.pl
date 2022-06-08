@@ -14,8 +14,8 @@ use v5.10;
 # Global Variables
 my $csv = Text::CSV->new({ sep_char => ',', eol => $/ });
 my %players;
-my @player_list;
-my %hidden_players;
+my @visible_player_list;
+my @all_player_list;
 my $stats_file = "stats.csv";
 my $hidden_file = "visible.csv";
 my $dt = localtime;
@@ -87,8 +87,8 @@ sub update_players_hash {
                     curr_month => $curr_month_amount,
                     prev_month => $prev_month_amount,
                     win_dates => [$date],
+                    visible => 1,
                 };
-        $hidden_players{$name} = 1;
     }
     else {
         $players{$name}{all_time} += $calculated;
@@ -105,29 +105,30 @@ sub determine_player_visibility {
     #   are set to visible.
     # this reads from the file and updates any existing keys with the saved state
     open($fh, '<', $hidden_file) or die "ERROR! Could not open '$hidden_file' $!\n";
-    @player_list = ();
+    @visible_player_list = ();
     while (my $line = <$fh>) {
         if ($csv->parse($line)) {
             my @fields = $csv->fields();
-            $hidden_players{$fields[0]} = $fields[1];
+            $players{$fields[0]}{visible} = $fields[1];
             if ($fields[1]) {
-                push @player_list, $fields[0];
+                push @visible_player_list, $fields[0];
             }
         }
     }
-    @player_list = sort @player_list;
+    @visible_player_list = sort @visible_player_list;
+    @all_player_list = sort keys %players;
     close $fh;
 }
 
 sub print_player_table {
     my ($show_hidden) = @_;
     my $rows = 5;
-    my @to_print = $show_hidden ? sort keys %hidden_players : @player_list;
+    my @to_print = $show_hidden ? @all_player_list : @visible_player_list;
 
     for (0..$rows-1) {
         for (my $i = $_; $i < scalar @to_print; $i+=$rows) {
             my $name = $to_print[$i];
-            my $idx = !$hidden_players{$name} ? 'HID' : $i;
+            my $idx = !$players{$name}{visible} ? 'HID' : $i;
             if (length $name > 8) {
                 print "[$idx] $name\t";
             }
@@ -182,7 +183,7 @@ sub get_validated_names {
     Validates name input for a single name using a number of checks.
     The input is forced into first letter capitalization so that the user can
         enter names case insensitive.
-    If the input is a number, exists in `player_list`, and is not hidden, then the name is good.
+    If the input is a number, exists in `visible_player_list`, and is not hidden, then the name is good.
     If the input exists in the `players` hash, and is not hidden, then the name is good.
     If the input is not a number, doesn't exists in the player hash, and is not hidden,
         give the option to make a new name.
@@ -203,14 +204,14 @@ sub validate_name {
     $fixed_case_name =~ s/^\s+|\s+$//g;
     $name = $fixed_case_name;
 
-    if (looks_like_number($name) and exists $player_list[$name]) {
-        $name = $player_list[$name];
+    if (looks_like_number($name) and exists $visible_player_list[$name]) {
+        $name = $visible_player_list[$name];
         return ($name, 1);
     }
-    elsif (exists $players{$name} and $hidden_players{$name}) {
+    elsif (exists $players{$name} and $players{$name}{visible}) {
         return ($name, 1);
     }
-    elsif (!looks_like_number($name) and !exists $hidden_players{$name}) {
+    elsif (!looks_like_number($name) and !exists $players{$name}{visible}) {
         print "($name) does not exist yet! Create it? [y/n] > ";
         my $new_name = <STDIN>;
         chomp $new_name;
@@ -219,7 +220,7 @@ sub validate_name {
             return ($name, 1);
         }
     }
-    elsif (!$hidden_players{$name}) {
+    elsif (!$players{$name}{visible}) {
         print "($name) exists, but is hidden. Try again > ";
         return ($name, 0);
     }
@@ -350,7 +351,7 @@ sub print_sorted_standings {
     foreach my $name (sort {$players{$b}{$timescale} <=> $players{$a}{$timescale}} keys %players) {
         locate $row, $tab;
         if ($hchar-2 == $row) { last; }
-        if ($hidden_players{$name}) {
+        if ($players{$name}{visible}) {
             printf "%-12s %s\n", $name, $players{$name}{$timescale};
             $row++;
         }
@@ -358,8 +359,6 @@ sub print_sorted_standings {
 }
 
 sub modify_player_visibility {
-    # any players that are newly created are added to the hidden_players hash,
-    #   so what this needs to do is get current hidden players, allow for updates and write to file
     # allow the user to hide/show 1 or more players at a time
     my $fh;
     my $show_hidden = 1;
@@ -368,10 +367,10 @@ sub modify_player_visibility {
     my @names = get_validated_names($show_hidden);
 
     # After the user has modified visibility, write the new values to hidden.csv
-    open($fh, '>', $hidden_file) or die "ERROR! Could not open '$hidden_file' $!\n";
-    foreach my $name (keys %hidden_players) {
-        $csv->print($fh, [$name, $hidden_players{$name}]);
-    }
+    # open($fh, '>', $hidden_file) or die "ERROR! Could not open '$hidden_file' $!\n";
+    # foreach my $name (keys %hidden_players) {
+    #     $csv->print($fh, [$name, $hidden_players{$name}]);
+    # }
     close $fh;
 }
 
