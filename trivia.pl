@@ -128,15 +128,16 @@ sub print_player_table {
     for (0..$rows-1) {
         for (my $i = $_; $i < scalar @to_print; $i+=$rows) {
             my $name = $to_print[$i];
-            my $idx = !$players{$name}{visible} ? 'HID' : $i;
-            if (length $name > 8) {
-                print "[$idx] $name\t";
+            my $is_hidden = !$players{$name}{visible} ? '->H' : '';
+            my $str = !$players{$name}{visible} ? "[$i$is_hidden] $name" : "[$i$is_hidden] $name";
+            if (length $str > 16) {
+                print "$str\t";
             }
-            elsif (length $name < 4) {
-                print "[$idx] $name\t\t\t";
+            elsif (length $str < 8) {
+                print "$str\t\t\t";
             }
             else {
-                print "[$idx] $name\t\t";
+                print "$str\t\t";
             }
         }
         print "\n";
@@ -144,7 +145,7 @@ sub print_player_table {
 }
 
 =pod
-    Gets validated input for 1 or more anmes using a helper method `validate_name()` which performs
+    Gets validated input for 1 or more names using a helper method `validate_name()` which performs
         the actual validation.
     For each name entered, run it through validation and determine whether all names entered are valid
         or rejected.
@@ -343,12 +344,15 @@ sub print_sorted_standings {
     my ($wchar, $hchar, $wpixels, $hpixels) = GetTerminalSize();
     my ($timescale, $header, $tab) = @_;
     my $row = 1;
-    # print header row
+
     locate $row, $tab;
     print "$header\n";
     $row++;
-    # print player stats
+
     foreach my $name (sort {$players{$b}{$timescale} <=> $players{$a}{$timescale}} keys %players) {
+        # Because of the order in which standings are drawn, the terminal cursor is being moved
+        #   around so that things will line up nicely. This means that we might not be able to
+        #   print out all the names if the terminal window height is smaller than the list.
         locate $row, $tab;
         if ($hchar-2 == $row) { last; }
         if ($players{$name}{visible}) {
@@ -371,7 +375,7 @@ sub modify_player_visibility {
     # foreach my $name (keys %hidden_players) {
     #     $csv->print($fh, [$name, $hidden_players{$name}]);
     # }
-    close $fh;
+    # close $fh;
 }
 
 sub menu {
