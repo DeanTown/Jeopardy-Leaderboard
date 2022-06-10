@@ -19,7 +19,6 @@ my @all_player_list;
 my $stats_file = "stats.csv";
 my $hidden_file = "visible.csv";
 my $dt = localtime;
-
 my $curr_month = $dt->mon;
 my $prev_month = $curr_month - 1;
 my $curr_year = $dt->year;
@@ -92,18 +91,15 @@ sub update_players_hash {
     }
     else {
         $players{$name}{all_time} += $calculated;
-        push @{$players{$name}{win_dates}}, $date;
         $players{$name}{curr_month} += $curr_month_amount;
         $players{$name}{prev_month} += $prev_month_amount;
+        push @{$players{$name}{win_dates}}, $date;
     }
 }
 
 sub determine_player_visibility {
     my $fh;
 
-    # the hidden_players hash is built while reading in the data and by default all the players
-    #   are set to visible.
-    # this reads from the file and updates any existing keys with the saved state
     open($fh, '<', $hidden_file) or die "ERROR! Could not open '$hidden_file' $!\n";
     @visible_player_list = ();
     while (my $line = <$fh>) {
@@ -184,7 +180,7 @@ sub get_validated_names {
     Validates name input for a single name using a number of checks.
     The input is forced into first letter capitalization so that the user can
         enter names case insensitive.
-    If the input is a number, exists in `visible_player_list`, and is not hidden, then the name is good.
+    If the input is a number, and exists in `visible_player_list`, then the name is good.
     If the input exists in the `players` hash, and is not hidden, then the name is good.
     If the input is not a number, doesn't exists in the player hash, and is not hidden,
         give the option to make a new name.
@@ -221,7 +217,7 @@ sub validate_name {
             return ($name, 1);
         }
     }
-    elsif (!$players{$name}{visible}) {
+    elsif (exists $players{$name} and !$players{$name}{visible}) {
         print "($name) exists, but is hidden. Try again > ";
         return ($name, 0);
     }
