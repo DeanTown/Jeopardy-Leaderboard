@@ -124,8 +124,7 @@ sub print_player_table {
     for (0..$rows-1) {
         for (my $i = $_; $i < scalar @to_print; $i+=$rows) {
             my $name = $to_print[$i];
-            my $is_hidden = !$players{$name}{visible} ? '->H' : '';
-            my $str = !$players{$name}{visible} ? "[$i$is_hidden] $name" : "[$i$is_hidden] $name";
+            my $str = !$players{$name}{visible} ? "($i) $name" : "[$i] $name";
             if (length $str > 16) {
                 print "$str\t";
             }
