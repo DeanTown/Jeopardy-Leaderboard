@@ -49,8 +49,8 @@ if (length $prev_month == 1) { $prev_month = 0 . $prev_month; }
 =cut
 
 =pod
-    Reads all entries from 'stats.csv'
-    Builds a hash (%players) of all existing players mapped with win dates
+    Reads all entries from 'stats.csv'.
+    Builds a hash (%players) of all existing players mapped with win dates.
 =cut
 
 sub read_stats {
@@ -61,9 +61,13 @@ sub read_stats {
         if ($csv->parse($line)) {
             my @fields = $csv->fields();
             if (exists $players{$fields[0]}) {
+                # Make a call to update the player hash with a create value of False (0)
+                #                                                       v
                 update_players_hash($fields[0], $fields[1], $fields[3], 0);
             }
             else {
+                # Make a call to update the player hash with a create value of True (1)
+                #                                                       v
                 update_players_hash($fields[0], $fields[1], $fields[3], 1);
             }
         }
@@ -72,13 +76,18 @@ sub read_stats {
     close $fh;
 }
 
+=pod
+    Helper subroutine to update the player hash with each row read in from the data store.
+    Since we are keeping a running tally of current and previous months scores, we need to 
+        specify when a new player is created so we aren't trying to add something to an
+        undefined value.
+=cut
+
 sub update_players_hash {
     my ($name, $date, $calculated, $create) = @_;
     my @date_bits = split('/', $date);
-    my $curr_month_amount = $date_bits[0] == $curr_month 
-                                    && $date_bits[2] == $curr_year ? $calculated : 0;
-    my $prev_month_amount = $date_bits[0] == $prev_month 
-                            && $date_bits[2] == $curr_year ? $calculated : 0;
+    my $curr_month_amount = $date_bits[0] == $curr_month && $date_bits[2] == $curr_year ? $calculated : 0;
+    my $prev_month_amount = $date_bits[0] == $prev_month && $date_bits[2] == $curr_year ? $calculated : 0;
 
     if ($create) {
         $players{$name} = {
@@ -96,6 +105,13 @@ sub update_players_hash {
         push @{$players{$name}{win_dates}}, $date;
     }
 }
+
+=pod
+    Populates @visible_player_list and @all_player_list.
+    If a player is not defined as hidden in the $hidden_file, they are added to
+        @visible player list. All names are added to @all_player_list, and both
+        lists are sorted in alphabetical order.
+=cut
 
 sub determine_player_visibility {
     my $fh;
@@ -115,6 +131,11 @@ sub determine_player_visibility {
     @all_player_list = sort keys %players;
     close $fh;
 }
+
+=pod
+    Prints out a table of all specified players. If $show_hidden is True it will print
+        all players within @all_player_list, otherwise it will only print visible players.
+=cut
 
 sub print_player_table {
     my ($show_hidden) = @_;
