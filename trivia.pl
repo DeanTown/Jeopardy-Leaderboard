@@ -35,16 +35,10 @@ if (length $prev_month == 1) { $prev_month = 0 . $prev_month; }
         you enter the name of a hidden person, instead of creating a new player with a duplicated name
         it should tell you that player is hidden.
     - add logging functionality to see the actions performed?
-    - write install script to auto install needed modules
     - have an option to be able to write in custom formulas for data analysis
         similar to: 'Allison[all_time] + Dan[curr_month]'
         and get something back. This is a boring formula example, maybe you could put in keywords
         like 'monthly' and get the average score for a player over that last X months?
-    - when writing to file, if the program crashes then data could be lost or only partially written.
-        To avoid this: switch over from reading and writing to the same file, to writing to a temp file
-        then deleting the old "main" file and renaming the temp file as the "main" one.
-        This will probably only be necessary when doing things with the hidden players as the other
-        file writing at this point is just appending to the stats file.
 
 =end TODO
 =cut
