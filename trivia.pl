@@ -34,7 +34,6 @@ if (length $prev_month == 1) { $prev_month = 0 . $prev_month; }
         entries submitted, etc. Hidden players would also need to have special checks, i.e. if
         you enter the name of a hidden person, instead of creating a new player with a duplicated name
         it should tell you that player is hidden.
-    - add logging functionality to see the actions performed?
     - have an option to be able to write in custom formulas for data analysis
         similar to: 'Allison[all_time] + Dan[curr_month]'
         and get something back. This is a boring formula example, maybe you could put in keywords
@@ -263,7 +262,7 @@ sub get_validated_date {
     if (scalar @date_components == 2) {
         for my $component (@date_components) {
             if (length $component == 1) {
-                $component = "0$component";
+                $component = 0 . $component;
             }
             elsif (length $component != 2) {
                 die "ERROR Date entered incorrectly ($date).";
