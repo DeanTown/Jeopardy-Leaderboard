@@ -28,6 +28,7 @@ if (length $prev_month == 1) { $prev_month = 0 . $prev_month; }
 =begin TODO
 
     - main menu prettier, and have current and past months top 3 players
+    - add some more date validation, currently 02/77 is a valid date.
     - add ability to hide certain names from the list for people who are no longer around
         this would mean they would no longer show up in standings, wouldn't be able to have new
         entries submitted, etc. Hidden players would also need to have special checks, i.e. if
@@ -266,6 +267,14 @@ sub get_validated_date {
     }
     my @date_components = split('/', $date);
     if (scalar @date_components == 2) {
+        for my $component (@date_components) {
+            if (length $component == 1) {
+                $component = "0$component";
+            }
+            elsif (length $component != 2) {
+                die "ERROR Date entered incorrectly ($date).";
+            }
+        }
         push @date_components, localtime->year;
         $date = join('/', @date_components);
     }
