@@ -250,7 +250,7 @@ sub get_validated_date {
     # Get today's date in MM/DD/YYYY format
     my $dt = localtime;
     $dt = $dt->mdy('/');
-    # Prompt user for entry date
+
     print "Answer Date (MM/DD/YYYY or MM/DD)> ";
     my $date = <STDIN>;
     chomp $date;
